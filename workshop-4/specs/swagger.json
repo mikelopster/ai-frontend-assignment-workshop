@@ -1,0 +1,771 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PayWise P2P Transfer API",
+    "description": "API สำหรับแอปพลิเคชันโอนเงิน P2P PayWise ที่ให้บริการค้นหาผู้ใช้ โอนเงิน และดูประวัติธุรกรรม",
+    "version": "1.0.0",
+    "contact": {
+      "name": "PayWise Support",
+      "email": "support@paywise.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.paywise.com/v1",
+      "description": "Production server"
+    },
+    {
+      "url": "https://staging-api.paywise.com/v1",
+      "description": "Staging server"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "เข้าสู่ระบบ",
+        "description": "เข้าสู่ระบบด้วย PIN หรือ credentials",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "เข้าสู่ระบบสำเร็จ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ข้อมูลการเข้าสู่ระบบไม่ถูกต้อง",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ถูกล็อคเนื่องจากใส่ PIN ผิดเกินกำหนด",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/search": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "ค้นหาผู้ใช้งาน",
+        "description": "ค้นหาผู้ใช้งานด้วย PayTag หรือชื่อ",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "description": "คำค้นหา (PayTag หรือชื่อผู้ใช้)",
+            "schema": {
+              "type": "string",
+              "example": "@somchai_jaidee"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "จำนวนผลลัพธ์สูงสุด",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ผลการค้นหาผู้ใช้งาน",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "พารามิเตอร์ไม่ถูกต้อง",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/account/balance": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "ดูยอดเงินคงเหลือ",
+        "description": "ดูยอดเงินคงเหลือในบัญชีผู้ใช้",
+        "responses": {
+          "200": {
+            "description": "ข้อมูลยอดเงินคงเหลือ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ไม่ได้รับอนุญาต",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/transactions": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "ดูประวัติธุรกรรม",
+        "description": "ดูประวัติธุรกรรมทั้งหมดของผู้ใช้",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "หน้าที่ต้องการ",
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "จำนวนรายการต่อหน้า",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "ประเภทธุรกรรม",
+            "schema": {
+              "type": "string",
+              "enum": ["incoming", "outgoing"]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "สถานะธุรกรรม",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "completed", "failed"]
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "required": false,
+            "description": "วันที่เริ่มต้น (ISO 8601)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "required": false,
+            "description": "วันที่สิ้นสุด (ISO 8601)",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ประวัติธุรกรรม",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "พารามิเตอร์ไม่ถูกต้อง",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "สร้างธุรกรรมใหม่",
+        "description": "สร้างธุรกรรมการโอนเงินใหม่",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "สร้างธุรกรรมสำเร็จ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ข้อมูลไม่ถูกต้อง",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "ยอดเงินไม่เพียงพอ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "ดูรายละเอียดธุรกรรม",
+        "description": "ดูรายละเอียดธุรกรรมตาม ID",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "description": "รหัสธุรกรรม",
+            "schema": {
+              "type": "string",
+              "example": "TXN202412180001"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "รายละเอียดธุรกรรม",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ไม่พบธุรกรรม",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/transactions/{transactionId}/confirm": {
+      "post": {
+        "tags": ["Transactions"],
+        "summary": "ยืนยันธุรกรรมด้วย PIN",
+        "description": "ยืนยันธุรกรรมการโอนเงินด้วย PIN",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "description": "รหัสธุรกรรม",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ยืนยันธุรกรรมสำเร็จ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Transaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PIN ไม่ถูกต้อง",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ไม่พบธุรกรรม",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ใส่ PIN ผิดเกินกำหนด",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/transactions/{transactionId}/slip": {
+      "get": {
+        "tags": ["Transactions"],
+        "summary": "ดาวน์โหลด E-Slip",
+        "description": "ดาวน์โหลดหลักฐานการโอนเงิน (E-Slip) ในรูปแบบ PDF หรือ PNG",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "description": "รหัสธุรกรรม",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "รูปแบบไฟล์",
+            "schema": {
+              "type": "string",
+              "enum": ["pdf", "png"],
+              "default": "pdf"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ไฟล์ E-Slip",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ไม่พบธุรกรรม",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "ชื่อผู้ใช้",
+            "example": "สมชาย ใจดี"
+          },
+          "payTag": {
+            "type": "string",
+            "description": "PayTag ของผู้ใช้",
+            "example": "@somchai_jaidee",
+            "pattern": "^@[a-zA-Z0-9_]+$"
+          }
+        },
+        "required": ["name", "payTag"]
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "รหัสธุรกรรม",
+            "example": "TXN202412180001"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["incoming", "outgoing"],
+            "description": "ประเภทธุรกรรม"
+          },
+          "amount": {
+            "type": "number",
+            "description": "จำนวนเงิน (บาท)",
+            "example": 500.00,
+            "minimum": 0.01
+          },
+          "recipient": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/User"
+              }
+            ],
+            "description": "ผู้รับเงิน (สำหรับธุรกรรมประเภท outgoing)"
+          },
+          "sender": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/User"
+              }
+            ],
+            "description": "ผู้ส่งเงิน (สำหรับธุรกรรมประเภท incoming)"
+          },
+          "memo": {
+            "type": "string",
+            "description": "หมายเหตุ",
+            "example": "ค่าอาหารมื้อเที่ยง",
+            "maxLength": 100
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "วันที่และเวลาของธุรกรรม",
+            "example": "2024-12-18T12:30:00Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "completed", "failed"],
+            "description": "สถานะธุรกรรม"
+          }
+        },
+        "required": ["id", "type", "amount", "date", "status"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "description": "PIN 6 หลัก",
+            "pattern": "^[0-9]{6}$",
+            "example": "123456"
+          }
+        },
+        "required": ["pin"]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT Access Token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "JWT Refresh Token"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "ระยะเวลาที่ token หมดอายุ (วินาที)",
+            "example": 3600
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": ["accessToken", "refreshToken", "expiresIn", "user"]
+      },
+      "UserSearchResponse": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "จำนวนผลลัพธ์ทั้งหมด"
+          }
+        },
+        "required": ["users", "total"]
+      },
+      "BalanceResponse": {
+        "type": "object",
+        "properties": {
+          "balance": {
+            "type": "number",
+            "description": "ยอดเงินคงเหลือ (บาท)",
+            "example": 15750.50
+          },
+          "accountNumber": {
+            "type": "string",
+            "description": "เลขที่บัญชี (แสดงเฉพาะบางส่วน)",
+            "example": "****1234"
+          },
+          "accountType": {
+            "type": "string",
+            "description": "ประเภทบัญชี",
+            "example": "บัญชีหลัก"
+          }
+        },
+        "required": ["balance", "accountNumber", "accountType"]
+      },
+      "TransactionListResponse": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "required": ["transactions", "pagination"]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "หน้าปัจจุบัน",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "description": "จำนวนรายการต่อหน้า",
+            "example": 20
+          },
+          "total": {
+            "type": "integer",
+            "description": "จำนวนรายการทั้งหมด",
+            "example": 100
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "จำนวนหน้าทั้งหมด",
+            "example": 5
+          }
+        },
+        "required": ["page", "limit", "total", "totalPages"]
+      },
+      "CreateTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "recipientPayTag": {
+            "type": "string",
+            "description": "PayTag ของผู้รับเงิน",
+            "example": "@somchai_jaidee",
+            "pattern": "^@[a-zA-Z0-9_]+$"
+          },
+          "amount": {
+            "type": "number",
+            "description": "จำนวนเงิน (บาท)",
+            "example": 500.00,
+            "minimum": 0.01
+          },
+          "memo": {
+            "type": "string",
+            "description": "หมายเหตุ (ไม่บังคับ)",
+            "example": "ค่าอาหารมื้อเที่ยง",
+            "maxLength": 100
+          }
+        },
+        "required": ["recipientPayTag", "amount"]
+      },
+      "ConfirmTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "description": "PIN 6 หลัก",
+            "pattern": "^[0-9]{6}$",
+            "example": "123456"
+          }
+        },
+        "required": ["pin"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "รหัสข้อผิดพลาด",
+            "example": "INVALID_PIN"
+          },
+          "message": {
+            "type": "string",
+            "description": "ข้อความแสดงข้อผิดพลาด",
+            "example": "PIN ไม่ถูกต้อง"
+          },
+          "details": {
+            "type": "object",
+            "description": "รายละเอียดเพิ่มเติม"
+          }
+        },
+        "required": ["error", "message"]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Access Token ที่ได้จากการเข้าสู่ระบบ"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "การจัดการการเข้าสู่ระบบและการยืนยันตัวตน"
+    },
+    {
+      "name": "Users",
+      "description": "การจัดการข้อมูลผู้ใช้และการค้นหา"
+    },
+    {
+      "name": "Account",
+      "description": "การจัดการข้อมูลบัญชีและยอดเงิน"
+    },
+    {
+      "name": "Transactions",
+      "description": "การจัดการธุรกรรมการโอนเงินและประวัติ"
+    }
+  ]
+}
